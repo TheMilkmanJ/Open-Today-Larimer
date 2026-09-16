@@ -13,35 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Overlay source and delete this workflow
+      - name: Remove this leftover seed workflow
         env:
-          SRC_PAGE: https://tmpfiles.org/wlwUqKsxm7Ti/open-today-src.tgz
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          download_tmp() {
-            local page="$1" out="$2" i html href
-            for i in 1 2 3 4; do
-              html=$(curl -fsSL -A "Mozilla/5.0" "$page") || true
-              href=$(printf "%s" "$html" | tr '"' '\n' | grep -E '^https://tmpfiles.org/dl/' | head -n1)
-              if [ -n "$href" ] && curl -fsSL -A "Mozilla/5.0" -o "$out" "$href"; then
-                return 0
-              fi
-              sleep $((i * 4))
-            done
-            echo "failed to download $page" >&2
-            return 1
-          }
-          download_tmp "$SRC_PAGE" /tmp/src.tgz
-          tar xzf /tmp/src.tgz
-          grep -q 'Open Today Larimer' README.md
-          grep -q 'loveland-south-railroad-shelter' src/data/places.ts
-          grep -q org.larimer.opentoday app.json
-          test -f App.tsx
           rm -f .github/workflows/seed-v1.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
           git add -u .github/workflows/seed-v1.yml
-          git commit -m "Add Open Today Larimer v1.0.0 street-day app."
+          git diff --cached --quiet || git commit -m "Remove leftover Open Today seed workflow."
           git push
